@@ -1,4 +1,4 @@
-This is a convenient, minimal, ESV Bible reader. The backend is implemented in [Janet](https://janet-lang.org/), and it's powered by the [ESV API](https://api.esv.org/docs/).
+This is a convenient, minimal, ESV Bible reader. The backend is implemented in [Janet](https://janet-lang.org/), and it's powered by the [ESV API](https://api.esv.org/docs/). You can find it [here]().
 
 # Copyright
 

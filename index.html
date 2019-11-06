@@ -83,14 +83,6 @@
         </a>
       </p>
       <p id="r" class="text-gray-900 text-sm"></p>
-      <p class="text-gray-400 text-xs text-center mt-10">
-        Scripture quotations are from
-        the <a href="https://www.esv.org" class="text-teal-200" target="_blank">ESV® Bible</a>
-        (The Holy Bible, English Standard Version®), copyright © 2001 by Crossway, a publishing
-        ministry of Good News Publishers. Used by permission. All rights reserved. You may not
-        copy or download more than 500 consecutive verses of the ESV Bible or more than one half
-        of any book of the ESV Bible.
-      </p>
     </div>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/fuse.js/3.4.5/fuse.min.js"></script>
     <script>
@@ -131,6 +123,22 @@
         search($q.value)
       })
 
+      window.addEventListener('keyup', evt => {
+        if (evt.key === 'Escape') {
+          $suggestions.classList.add('hidden')
+        }
+      })
+
+      $q.addEventListener('mousedown', evt => {
+        if (document.activeElement !== $q) {
+          window.requestIdleCallback(() => evt.target.select())
+        }
+      })
+
+      $q.addEventListener('blur', evt => {
+        window.requestIdleCallback(() => $suggestions.classList.add('hidden'))
+      })
+
       $q.addEventListener('input', evt => {
         $suggestions.innerHTML = ''
 
@@ -156,6 +164,8 @@
             $q.value = book + ' '
             $q.focus()
 
+            search($q.value, false)
+
             $suggestions.classList.add('hidden')
           })
 
@@ -169,14 +179,17 @@
         }
       })
 
-      async function search(q) {
+      async function search(q, setCanonical = true) {
         const url = `/api/passage/html/?q=${q}`
         const {canonical, passages} = await fetch(url).then(r => r.json())
 
         if (passages.length === 0) {
           $r.innerHTML = "No results found!"
         } else {
-          $q.value = canonical
+          if (setCanonical) {
+            $q.value = canonical
+          }
+
           $r.innerHTML = passages[0]
 
            // Add the copyright
