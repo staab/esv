@@ -126,12 +126,14 @@
         {shouldSort: true, keys: ['book']}
       )
 
-      search('John 1')
+      search('John 1', {initial: true})
 
       $('form').addEventListener('submit', evt => {
         evt.preventDefault()
 
         search($q.value)
+
+        $suggestions.classList.add('hidden')
       })
 
       window.addEventListener('keyup', evt => {
@@ -148,9 +150,9 @@
         const {scrollHeight} = document.body
 
         if (scrollY < 200 && $prev) {
-          search($prev.querySelector('h2').innerText)
+          search($prev.querySelector('h2').innerText, {backward: true})
         } else if (scrollHeight - scrollY - innerHeight < 200 && $next) {
-          search($next.querySelector('h2').innerText)
+          search($next.querySelector('h2').innerText, {forward: true})
         }
       })
 
@@ -227,20 +229,25 @@
         return fetch(url).then(r => r.json())
       }
 
-      async function search(q, {setCanonical = true} = {}) {
-        if (searching ) {
+      async function search(q, {
+          setCanonical = true,
+          backward = false,
+          forward = false,
+          initial = false,
+        } = {}) {
+        if (searching) {
           return
         }
 
         searching = true
 
-        const {
-          canonical, passages, passage_meta: [{prev_chapter, next_chapter}],
-        } = await fetchPassage(q)
+        const {canonical, passages, passage_meta} = await fetchPassage(q)
 
         if (passages.length === 0) {
           $r.innerHTML = "No results found!"
         } else {
+          const [{prev_chapter, next_chapter}] = passage_meta
+
           if (setCanonical) {
             $q.value = canonical
           }
@@ -263,17 +270,29 @@
             contents = contents + '<div class="next">' + next.passages[0] + '</div>'
           }
 
+          const oldScrollY = window.scrollY
+          const $oldPrev = $r.querySelector('.prev')
+          const oldPrevHeight = $oldPrev ? $oldPrev.offsetHeight : 0
+
           $r.innerHTML = contents
 
-          if (hasPrev) {
-            const $prev = $r.querySelector('.prev')
+          postProcess()
 
+          const $prev = $r.querySelector('.prev')
+
+          if (backward) {
             window.scrollTo({
-              top: window.scrollY + $prev.offsetHeight + 24,
+              top: oldScrollY + $prev.offsetHeight + 7,
+            })
+          } else if (forward) {
+            window.scrollTo({
+              top: oldScrollY - oldPrevHeight - 7,
+            })
+          } else {
+            window.scrollTo({
+              top: $prev.offsetHeight + 24,
             })
           }
-
-          postProcess()
         }
 
         searching = false
