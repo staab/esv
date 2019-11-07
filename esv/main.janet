@@ -27,4 +27,4 @@
 
 (defn main [& args]
   (let [port (eval-string (os/getenv "PORT"))]
-    (circlet/server handler port)))
+    (circlet/server handler port "0.0.0.0")))
