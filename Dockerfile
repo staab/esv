@@ -23,6 +23,6 @@ RUN groupadd -g $GID $USER
 RUN useradd -g $GID -M -u $UID -d /var/app $USER
 
 # Application setup
+ADD * /var/app
 WORKDIR /var/app
-RUN chmod 777 /var/app
 USER $USER
