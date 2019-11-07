@@ -30,6 +30,11 @@
       margin-bottom: 0.5em;
     }
 
+    #r .end-line-group {
+      display: block;
+      margin-bottom: 0.5em;
+    }
+
     #r .verse-num {
       font-size: 0.5em;
       font-weight: normal;
@@ -46,6 +51,10 @@
 
     #r p:last-child {
       display: none;
+    }
+
+    #r h4.speaker {
+      font-style: italic;
     }
 
     input:focus {
@@ -73,7 +82,7 @@
              border-gray-200 w-64 max-h-full shadow">
     </ul>
     <div class="p-2 pt-16">
-      <p id="copyright" class="-mt-5 text-gray-400 text-xs text-center hidden">
+      <p class="our-copyright -mt-5 text-gray-400 text-xs text-center hidden">
         Copyright
         <a
           class="underline cursor-pointer"
@@ -89,7 +98,7 @@
       const $ = document.querySelector.bind(document)
       const $q = $('[name="q"]')
       const $r = $('#r')
-      const $copyright = $('#copyright')
+      const $copyright = $('.our-copyright')
       const $suggestions = $('#suggestions')
       const books = {
         'Genesis':	50, 'Exodus':	40, 'Leviticus':	27, 'Numbers':	36,
@@ -110,6 +119,8 @@
         '2 John':	1, '3 John':	1, 'Jude':	1, 'Revelation':	22,
       }
 
+      let searching = false
+
       const fuse = new Fuse(
         Object.keys(books).map(book => ({book})),
         {shouldSort: true, keys: ['book']}
@@ -126,6 +137,20 @@
       window.addEventListener('keyup', evt => {
         if (evt.key === 'Escape') {
           $suggestions.classList.add('hidden')
+        }
+      })
+
+      window.addEventListener('scroll', evt => {
+        $prev = document.querySelector('.prev')
+        $next = document.querySelector('.next')
+
+        const {scrollY, innerHeight} = window
+        const {scrollHeight} = document.body
+
+        if (scrollY < 200 && $prev) {
+          search($prev.querySelector('h2').innerText)
+        } else if (scrollHeight - scrollY - innerHeight < 200 && $next) {
+          search($next.querySelector('h2').innerText)
         }
       })
 
@@ -160,11 +185,12 @@
           $li.classList.add('p-2')
           $li.classList.add('cursor-pointer')
           $li.classList.add('hover:bg-gray-100')
-          $li.addEventListener('click', evt => {
+          $li.addEventListener('mousedown', evt => {
+            evt.preventDefault()
             $q.value = book + ' '
             $q.focus()
 
-            search($q.value, false)
+            search($q.value, {setCanonical: false})
 
             $suggestions.classList.add('hidden')
           })
@@ -179,9 +205,38 @@
         }
       })
 
-      async function search(q, setCanonical = true) {
-        const url = `/api/passage/html/?q=${q}`
-        const {canonical, passages} = await fetch(url).then(r => r.json())
+      function postProcess() {
+        $r.querySelectorAll('.copyright').forEach($el => {
+          $el.parentNode.parentNode.removeChild($el.parentNode)
+        })
+
+        $r.querySelectorAll('.our-copyright').forEach($el => {
+          $el.parentNode.removeChild($el)
+        })
+
+        $r.querySelectorAll('h2').forEach($h2 => {
+          $cp = $copyright.cloneNode(true)
+          $cp.classList.remove('hidden')
+          $h2.parentNode.insertBefore($cp, $h2.nextSibling)
+        })
+      }
+
+      function fetchPassage(query) {
+        const url = `/api/passage/html/?q=${query}`
+
+        return fetch(url).then(r => r.json())
+      }
+
+      async function search(q, {setCanonical = true} = {}) {
+        if (searching ) {
+          return
+        }
+
+        searching = true
+
+        const {
+          canonical, passages, passage_meta: [{prev_chapter, next_chapter}],
+        } = await fetchPassage(q)
 
         if (passages.length === 0) {
           $r.innerHTML = "No results found!"
@@ -190,14 +245,38 @@
             $q.value = canonical
           }
 
-          $r.innerHTML = passages[0]
+          const [prev, next] = await Promise.all([
+            fetchPassage(prev_chapter.join('-')),
+            fetchPassage(next_chapter.join('-')),
+          ])
 
-           // Add the copyright
-          $h2 = $r.querySelector('h2')
-          $cp = $copyright.cloneNode(true)
-          $cp.classList.remove('hidden')
-          $h2.parentNode.insertBefore($cp, $h2.nextSibling)
+          let contents = '<div class="cur">' + passages[0] + '</div>'
+
+          const hasPrev = prev.passages.length && prev.passages[0] !== passages[0]
+          const hasNext = next.passages.length && next.passages[0] !== passages[0]
+
+          if (hasPrev) {
+            contents = '<div class="prev">' + prev.passages[0] + '</div>' + contents
+          }
+
+          if (hasNext) {
+            contents = contents + '<div class="next">' + next.passages[0] + '</div>'
+          }
+
+          $r.innerHTML = contents
+
+          if (hasPrev) {
+            const $prev = $r.querySelector('.prev')
+
+            window.scrollTo({
+              top: window.scrollY + $prev.offsetHeight + 24,
+            })
+          }
+
+          postProcess()
         }
+
+        searching = false
       }
     </script>
   </body>
