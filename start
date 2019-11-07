@@ -1,3 +1,3 @@
 #!/bin/bash
 
-fd . | entr -r bash -c 'PORT=8080 janet -l ./esv/main -e "(main)"'
+fd . | entr -r bash -c 'export $(cat env.local) && janet -l ./esv/main -e "(main)"'
