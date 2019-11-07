@@ -1,5 +1,4 @@
 (import circlet)
-(import json)
 
 (defn curl-esv [path]
   (let [auth (string "'Authorization: Token " (os/getenv "ESV_API_TOKEN") "'")
