@@ -25,4 +25,6 @@ RUN useradd -g $GID -M -u $UID -d /var/app $USER
 # Application setup
 COPY ./ /var/app
 WORKDIR /var/app
+RUN jpm deps
+RUN jpm build
 USER $USER
