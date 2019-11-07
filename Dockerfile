@@ -23,6 +23,6 @@ RUN groupadd -g $GID $USER
 RUN useradd -g $GID -M -u $UID -d /var/app $USER
 
 # Application setup
-ADD * /var/app/
+COPY ./ /var/app
 WORKDIR /var/app
 USER $USER
