@@ -242,10 +242,16 @@
 
         searching = true
 
-        const {canonical, passages, passage_meta} = await fetchPassage(q)
+        const {canonical, passages, passage_meta, detail} = await fetchPassage(q)
 
         if (!passages || passages.length === 0) {
-          $r.innerHTML = "No results found!"
+          const $err = document.createElement("div")
+
+          $err.innerText = detail
+          $err.classList.add("text-center")
+          $err.classList.add("mt-20")
+
+          $r.innerHTML = $err.outerHTML
         } else {
           const [{prev_chapter, next_chapter}] = passage_meta
 
