@@ -254,14 +254,14 @@
           }
 
           const [prev, next] = await Promise.all([
-            fetchPassage(prev_chapter.join('-')),
-            fetchPassage(next_chapter.join('-')),
+            prev_chapter ? fetchPassage(prev_chapter.join('-')) : null,
+            next_chapter ? fetchPassage(next_chapter.join('-')) : null,
           ])
 
           let contents = '<div class="cur">' + passages[0] + '</div>'
 
-          const hasPrev = prev.passages.length && prev.passages[0] !== passages[0]
-          const hasNext = next.passages.length && next.passages[0] !== passages[0]
+          const hasPrev = prev && prev.passages.length && prev.passages[0] !== passages[0]
+          const hasNext = next && next.passages.length && next.passages[0] !== passages[0]
 
           if (hasPrev) {
             contents = '<div class="prev">' + prev.passages[0] + '</div>' + contents
@@ -280,10 +280,11 @@
           postProcess()
 
           const $prev = $r.querySelector('.prev')
+          const prevOffset = $prev ? $prev.offsetHeight : 0
 
           if (backward) {
             window.scrollTo({
-              top: oldScrollY + $prev.offsetHeight + 7,
+              top: oldScrollY + prevOffset + 7,
             })
           } else if (forward) {
             window.scrollTo({
@@ -291,7 +292,7 @@
             })
           } else {
             window.scrollTo({
-              top: $prev.offsetHeight + 24,
+              top: prevOffset + 24,
             })
           }
         }
