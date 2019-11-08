@@ -1,4 +1,5 @@
 (import circlet)
+(import esv/lru :as lru)
 
 (defn curl-esv [path]
   (let [auth (string "'Authorization: Token " (os/getenv "ESV_API_TOKEN") "'")
@@ -11,7 +12,7 @@
 (def ct/html "text/html")
 (def ct/svg "image/svg+xml")
 
-(def res-cache @{})
+(def res-cache (lru/create {:max-size 30}))
 
 (defn ok [ct body]
  {:status 200 :headers {"Content-Type" ct} :body body})
@@ -21,12 +22,16 @@
  (cond
   (string/has-prefix? "/api/" uri)
   (let [full-uri (string (string/slice uri 5) "?" qs)
-        response (or (res-cache full-uri) (curl-esv full-uri))]
+        cached-res (:get res-cache full-uri)
+        response (or cached-res (curl-esv full-uri))]
+    (pp (res-cache :size))
+    (pp (keys (res-cache :entries)))
+    (pp (string full-uri ": " (if cached-res "Cache hit" "Cache miss")))
     (if (or (string/find "<!DOCTYPE html>" response)
             (string/find "Request was throttled" response))
       {:status 404 :body `{"error": "Not Found"}`}
       (do
-       (put res-cache full-uri response)
+       (:put res-cache full-uri response)
        (ok ct/json response))))
   (= uri "/search.svg") (ok ct/svg (slurp "search.svg"))
   true (ok ct/html (slurp "index.html"))))
