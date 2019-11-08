@@ -244,7 +244,7 @@
 
         const {canonical, passages, passage_meta} = await fetchPassage(q)
 
-        if (passages.length === 0) {
+        if (!passages || passages.length === 0) {
           $r.innerHTML = "No results found!"
         } else {
           const [{prev_chapter, next_chapter}] = passage_meta
