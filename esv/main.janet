@@ -1,5 +1,5 @@
 (import circlet)
-(import lru)
+(import staab.cache/lru :as lru)
 
 (defn curl-esv [path]
   (let [auth (string "'Authorization: Token " (os/getenv "ESV_API_TOKEN") "'")
