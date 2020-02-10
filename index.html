@@ -121,6 +121,7 @@
       }
 
       let searching = false
+      let prevScrollY = window.scrollY
 
       const fuse = new Fuse(
         Object.keys(books).map(book => ({book})),
@@ -144,17 +145,23 @@
       })
 
       window.addEventListener('scroll', evt => {
+        if (searching) {
+          return
+        }
+
         $prev = document.querySelector('.prev')
         $next = document.querySelector('.next')
 
         const {scrollY, innerHeight} = window
         const {scrollHeight} = document.body
 
-        if (scrollY < 200 && $prev) {
+        if (prevScrollY > scrollY && scrollY < 200 && $prev) {
           search($prev.querySelector('h2').innerText, {backward: true})
-        } else if (scrollHeight - scrollY - innerHeight < 200 && $next) {
+        } else if (prevScrollY < scrollY && scrollHeight - scrollY - innerHeight < 200 && $next) {
           search($next.querySelector('h2').innerText, {forward: true})
         }
+
+        prevScrollY = scrollY
       })
 
       $q.addEventListener('mousedown', evt => {
@@ -303,6 +310,8 @@
               top: prevOffset + 24,
             })
           }
+
+          prevScrollY = window.scrollY
         }
 
         searching = false
