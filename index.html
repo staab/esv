@@ -132,6 +132,16 @@
 
       const getQueryFromUrl = () => decodeURI(location.pathname.slice(1).replace(/\+/g, ' '))
 
+      const isVisible = $el => {
+        if (!$el) {
+          return false
+        }
+
+        const {top, bottom} = $el.getBoundingClientRect()
+
+        return bottom > 0 && top <= innerHeight
+      }
+
       search(getQueryFromUrl() || localStorage.getItem('q') || 'John 1', {initial: true})
 
       $('form').addEventListener('submit', evt => {
@@ -153,16 +163,34 @@
           return
         }
 
-        $prev = document.querySelector('.prev')
-        $next = document.querySelector('.next')
-
-        const {scrollY, innerHeight} = window
         const {scrollHeight} = document.body
+        const $prev = $('.prev')
+        const $next = $('.next')
 
-        if (prevScrollY > scrollY && scrollY < 200 && $prev) {
-          search($prev.querySelector('h2').innerText, {backward: true})
-        } else if (prevScrollY < scrollY && scrollHeight - scrollY - innerHeight < 200 && $next) {
-          search($next.querySelector('h2').innerText, {forward: true})
+        const prev = (
+          isVisible($prev) &&
+          (
+            !isVisible($next) ||
+            scrollY < 100
+          ) &&
+          prevScrollY > scrollY &&
+          $prev.querySelector('h2').innerText
+        )
+
+        const next = (
+          isVisible($next) &&
+          (
+            !isVisible($prev) ||
+            scrollHeight - scrollY - innerHeight < 100
+          ) &&
+          prevScrollY < scrollY &&
+          $next.querySelector('h2').innerText
+        )
+
+        if (prev) {
+          search(prev, {backward: true})
+        } else if (next) {
+          search(next, {forward: true})
         }
 
         prevScrollY = scrollY
