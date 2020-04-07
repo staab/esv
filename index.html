@@ -68,7 +68,8 @@
         <a
           class="text-xs text-gray-600 underline cursor-pointer"
           href="https://github.com/staab/esv"
-          target="_blank">
+          target="_blank"
+          tabindex="-1">
           About
         </a>
         <div class="flex justify-center items-center">
@@ -88,7 +89,8 @@
         <a
           class="underline cursor-pointer"
           href="https://www.esv.org"
-          target="_blank">
+          target="_blank"
+          tabindex="-1">
           esv.org
         </a>
       </p>
@@ -128,7 +130,9 @@
         {shouldSort: true, keys: ['book']}
       )
 
-      search(localStorage.getItem('q') || 'John 1', {initial: true})
+      const getQueryFromUrl = () => decodeURI(location.pathname.slice(1).replace(/\+/g, ' '))
+
+      search(getQueryFromUrl() || localStorage.getItem('q') || 'John 1', {initial: true})
 
       $('form').addEventListener('submit', evt => {
         evt.preventDefault()
@@ -162,6 +166,10 @@
         }
 
         prevScrollY = scrollY
+      })
+
+      window.addEventListener('popstate', evt => {
+        search(getQueryFromUrl())
       })
 
       $q.addEventListener('mousedown', evt => {
@@ -267,6 +275,8 @@
           if (setCanonical) {
             $q.value = canonical
           }
+
+          history.pushState({q: $q.value}, null, $q.value.replace(/ /g, '+'))
 
           const [prev, next] = await Promise.all([
             prev_chapter ? fetchPassage(prev_chapter.join('-')) : null,
