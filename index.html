@@ -122,7 +122,7 @@
         '2 John': 1, '3 John': 1, 'Jude': 1, 'Revelation': 22,
       }
 
-      let searching = false
+      let prevQ = null
       let prevScrollY = window.scrollY
 
       const fuse = new Fuse(
@@ -134,7 +134,7 @@
 
       const getHeight = $el => $el ? $el.offsetHeight : 0
 
-      const getOffset = $el => $el ? $el.getBoundingClientRect().top : 0
+      const getOffset = $el => $el ? $el.offsetTop : 0
 
       const isVisible = $el => {
         if (!$el) {
@@ -144,16 +144,6 @@
         const {top, bottom} = $el.getBoundingClientRect()
 
         return bottom > 0 && top <= innerHeight
-      }
-
-      const debounce = (wait, f) => {
-        let timeout
-
-        return (...args) => {
-          clearTimeout(timeout)
-
-          timeout = setTimeout(() => f(...args), wait)
-        }
       }
 
       search(qFromUrl() || localStorage.getItem('q') || 'John 1', {initial: true})
@@ -172,11 +162,7 @@
         }
       })
 
-      window.addEventListener('scroll', debounce(300, evt => {
-        if (searching) {
-          return
-        }
-
+      window.addEventListener('scroll', evt => {
         const {scrollHeight} = document.body
         const $prev = $('.prev')
         const $next = $('.next')
@@ -208,7 +194,7 @@
         }
 
         prevScrollY = scrollY
-      }))
+      })
 
       window.addEventListener('popstate', evt => {
         search(qFromUrl())
@@ -293,15 +279,19 @@
           forward = false,
           initial = false,
         } = {}) {
-        if (searching) {
+        if (q === prevQ) {
           return
         }
 
-        searching = true
+        prevQ = q
 
         localStorage.setItem('q', q)
 
         const {canonical, passages, passage_meta, detail} = await fetchPassage(q)
+
+        if (prevQ !== q) {
+          return
+        }
 
         if (!passages || passages.length === 0) {
           const $err = document.createElement("div")
