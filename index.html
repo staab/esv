@@ -123,6 +123,8 @@
       }
 
       let prevQ = null
+      let touching = false
+      let pendingUpdate
       let prevScrollY = window.scrollY
 
       const fuse = new Fuse(
@@ -146,7 +148,7 @@
         return bottom > 0 && top <= innerHeight
       }
 
-      search(qFromUrl() || localStorage.getItem('q') || 'John 1', {initial: true})
+      search(qFromUrl() || localStorage.getItem('q') || 'John 1')
 
       $('form').addEventListener('submit', evt => {
         evt.preventDefault()
@@ -159,6 +161,19 @@
       window.addEventListener('keyup', evt => {
         if (evt.key === 'Escape') {
           $suggestions.classList.add('hidden')
+        }
+      })
+
+      window.addEventListener('touchstart', evt => {
+        touching = true
+      })
+
+      window.addEventListener('touchend', evt => {
+        touching = false
+
+        if (pendingUpdate) {
+          applyUpdate(pendingUpdate)
+          pendingUpdate = null
         }
       })
 
@@ -188,9 +203,9 @@
         )
 
         if (prev) {
-          search(prev, {backward: true})
+          search(prev, {mode: 'backward'})
         } else if (next) {
-          search(next, {forward: true})
+          search(next, {mode: 'forward'})
         }
 
         prevScrollY = scrollY
@@ -251,7 +266,20 @@
         }
       })
 
-      function postProcess() {
+      function applyUpdate({contents, mode}) {
+        // If they're touching the screen still, their finger will
+        // override our attempt to scroll for them. Wait until they're done
+        if (touching) {
+          pendingUpdate = {contents, mode}
+
+          return
+        }
+
+        const oldScrollY = window.scrollY
+        const oldPrevHeight = getHeight($('.prev'))
+
+        $r.innerHTML = contents
+
         $r.querySelectorAll('.copyright').forEach($el => {
           $el.parentNode.parentNode.removeChild($el.parentNode)
         })
@@ -265,6 +293,22 @@
           $cp.classList.remove('hidden')
           $h2.parentNode.insertBefore($cp, $h2.nextSibling)
         })
+
+        if (mode === 'backward') {
+          window.scrollTo({
+            top: oldScrollY + getHeight($('.prev')) + 7,
+          })
+        } else if (mode === 'forward') {
+          window.scrollTo({
+            top: oldScrollY - oldPrevHeight - 7,
+          })
+        } else {
+          window.scrollTo({
+            top: getOffset($('.cur')) - 48,
+          })
+        }
+
+        prevScrollY = window.scrollY
       }
 
       function fetchPassage(query) {
@@ -273,12 +317,7 @@
         return fetch(url).then(r => r.json())
       }
 
-      async function search(q, {
-          setCanonical = true,
-          backward = false,
-          forward = false,
-          initial = false,
-        } = {}) {
+      async function search(q, {setCanonical = true, mode} = {}) {
         if (q === prevQ) {
           return
         }
@@ -328,28 +367,7 @@
             contents = contents + '<div class="next">' + next.passages[0] + '</div>'
           }
 
-          const oldScrollY = window.scrollY
-          const oldPrevHeight = getHeight($('.prev'))
-
-          $r.innerHTML = contents
-
-          postProcess()
-
-          if (backward) {
-            window.scrollTo({
-              top: oldScrollY + getHeight($('.prev')) + 7,
-            })
-          } else if (forward) {
-            window.scrollTo({
-              top: oldScrollY - oldPrevHeight - 7,
-            })
-          } else {
-            window.scrollTo({
-              top: getOffset($('.cur')) - 48,
-            })
-          }
-
-          prevScrollY = window.scrollY
+          applyUpdate({contents, mode})
         }
 
         searching = false
